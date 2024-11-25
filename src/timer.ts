@@ -1,35 +1,33 @@
 import { Client } from "discord.js";
+import { sendFileOnScheduleToTextChannel } from "./apis/SendFileOnScheduleToTextChannel";
 
-const jobs: Function[] = [];
+const jobs: Function[] = [
+    sendFileOnScheduleToTextChannel
+];
 
-async function executeAllJobs(client:Client) {
-    const user = await client.users.fetch(process.env.DISCORD_USER_ID as string);
-    
+function executeAllJobs(client:Client) {    
     for (const job of jobs) {
-        const embeds = await job();
-        if (embeds.length === 0) continue;
-        user.send({embeds: embeds});
+        try {
+            job(client);
+        } catch (error) {
+            console.error(`❌ Job failed: ${error}`);
+        }
     }
 }
 
-export async function triggerDailyUpdate(client: Client) {
+export function triggerMinutelyUpdate(client: Client) {
 	const today = new Date();
-	const tomorrow = new Date(today);
-
-	tomorrow.setDate(tomorrow.getDate() + 1);
-	tomorrow.setHours(0, 1, 0, 0);
-
-	const beforeMidnight = tomorrow.getTime() - Date.now() + Number(process.env.DAILY_UPDATE_OFFSET_MILLISECONDS);
+	const diffToNextMinute = 60000 - (today.getTime() % 60000);
 
 	console.log(
-		`✅ Daily update activated (will be triggered in ${
-			beforeMidnight / 1000
+		`✅ Minutely update activated (will be triggered in ${
+			diffToNextMinute / 1000
 		}s)`
 	);
-	setTimeout(async () => {
-		await executeAllJobs(client)
-		setInterval(async () => {
-			await executeAllJobs(client)
-		}, 86400000);
-	}, beforeMidnight);
+	setTimeout( () => {
+		executeAllJobs(client)
+		setInterval( () => {
+			executeAllJobs(client)
+		}, 60*1000);
+	}, diffToNextMinute);
 }
