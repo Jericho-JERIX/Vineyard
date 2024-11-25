@@ -7,10 +7,12 @@ const jobs: Function[] = [
 
 function executeAllJobs(client:Client) {    
     for (const job of jobs) {
+        const now = new Date();
         try {
             job(client);
+            console.log(`[${now.toISOString()}] ✅ Job executed: ${job.name} - ${now.toLocaleString()}`);
         } catch (error) {
-            console.error(`❌ Job failed: ${error}`);
+            console.error(`[${now.toISOString()}] ❌ Job failed: ${error} - ${now.toLocaleString()}`);
         }
     }
 }
